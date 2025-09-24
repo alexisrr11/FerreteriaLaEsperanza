@@ -1,0 +1,226 @@
+import { responder } from "./chatBot/funcionesChatbot.js";
+
+const botonChat = document.getElementById("botonChat");
+const chatBox = document.getElementById("chatBox");
+const input = document.getElementById("inputMensaje");
+const mensajes = document.getElementById("mensajes");
+const productosTodos = document.getElementById("productos");
+const btnMenu = document.getElementById("btnMenu");
+const menuNav = document.getElementById("menuNav");
+const form = document.getElementById("form");
+
+//Llamar API local
+try {
+  fetch("https://raw.githubusercontent.com/alexisrr11/APIferre/refs/heads/main/productos.json")
+    .then(respuesta => respuesta.json())
+    .then(productos => {
+      renderProductos(productos);
+      window.productos = productos;
+    })
+} catch {
+  error => console.error("Error al cargar los productos", error);
+}
+
+function renderProductos(array) {
+  productosTodos.innerHTML = "";
+  array.forEach(e => {
+    const nuevoElemento = document.createElement("div");
+    nuevoElemento.classList.add("p-4", "border", "rounded", "mb-4", "bg-white", "shadow");
+
+    nuevoElemento.innerHTML = `
+      <img src="${e.img}" alt="${e.nombre}" class="w-full rounded mb-4">
+      <h3 class="text-xl font-semibold">${e.nombre}</h3>
+      <p class="text-sm mb-2">${e.descripcion}</p>
+      <p class="font-bold">$${e.precio}</p>
+      <div class="text-right">
+    <a href="#formulario" 
+       class="mt-2 inline-block text-blue-500 hover:underline consultar-btn"
+       data-producto="${e.nombre}">
+       Consultar
+    </a>
+  </div>
+    `;
+
+    productosTodos.appendChild(nuevoElemento);
+  });
+
+  // Seleccionar todos los botones de consulta
+  const consultarBtns = document.querySelectorAll(".consultar-btn");
+
+  consultarBtns.forEach(btn => {
+    btn.addEventListener("click", function (event) {
+      event.preventDefault();
+      const producto = this.getAttribute("data-producto");
+      const inputProducto = document.querySelector("input[name='producto']");
+      inputProducto.value = producto;
+      document.querySelector("#formulario").scrollIntoView({ behavior: "smooth" });
+    });
+  });
+}
+
+//Renderizado del chatBot
+
+botonChat.addEventListener("click", () => {
+  chatBox.classList.toggle("hidden");
+});
+
+input.addEventListener("keypress", (e) => {
+  if (e.key === "Enter" && input.value.trim()) {
+    const userMsg = input.value;
+    setTimeout(() => {
+      mensajes.innerHTML += `<div><strong>Vos:</strong> ${userMsg}</div>`;
+      mensajes.innerHTML += `<div><strong>Bot:</strong> ${responder(userMsg)}</div>`;
+    }, 600)
+    input.value = "";
+    mensajes.scrollTop = mensajes.scrollHeight;
+  }
+});
+
+//Formulario Whatsapp
+
+form.addEventListener("submit", function (e) {
+  e.preventDefault();
+
+  const name = form.name.value;
+  const producto = form.producto.value;
+  const mensaje = form.mensaje.value;
+
+  // Si el usuario no escribe mensaje, no se agrega al texto
+  let texto = `Hola, soy ${name}. Estoy interesado por el producto: ${producto}.`;
+  if (mensaje.trim() !== "") {
+    texto += `\nMensaje: ${mensaje}`;
+  }
+
+  const url = `https://wa.me/541137659081?text=${encodeURIComponent(texto)}`;
+
+  window.open(url, "_blank");
+});
+
+//Menu
+
+btnMenu.addEventListener("click", () => {
+  menuNav.classList.toggle("hidden");
+});
+
+//Deslizamiento suave Href"";
+function activarDeslizamiento() {
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener("click", function (e) {
+      e.preventDefault();
+      const target = document.querySelector(this.getAttribute("href"));
+      if (target) {
+        target.scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+      }
+    });
+  });
+}
+activarDeslizamiento();
+
+//Modales y ofertas
+const modal = document.getElementById("ofertasModal");
+const openModal = document.getElementById("openModal");
+const closeModal = document.getElementById("closeModal");
+
+const slider = document.getElementById("slider");
+const nextBtn = document.getElementById("next");
+const prevBtn = document.getElementById("prev");
+
+let index = 0;
+
+openModal.addEventListener("click", () => modal.classList.remove("hidden"));
+closeModal.addEventListener("click", () => modal.classList.add("hidden"));
+modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.add("hidden"); });
+
+nextBtn.addEventListener("click", () => {
+  if (index < 2) index++;
+  else index = 0;
+  slider.style.transform = `translateX(-${index * 100}%)`;
+});
+
+prevBtn.addEventListener("click", () => {
+  if (index > 0) index--;
+  else index = 2;
+  slider.style.transform = `translateX(-${index * 100}%)`;
+});
+
+//Ver ofertas
+window.onload = function () {
+  const modal = document.getElementById("modal-ofertas");
+  const listaOfertas = document.getElementById("lista-ofertas");
+  const contenedor = document.getElementById("contenedor-ofertas");
+  const titulo = document.getElementById("titulo-ofertas");
+  const btnConsultaWp = document.getElementById("botonConsultaWhatsapp");
+
+  // Array de ofertas por día
+  const ofertasPorDia = {
+    1: ["🔨 Lunes: 20% OFF en Martillos", "💳 Descuento en destornilladores con Visa"],
+    2: ["🔧 Martes: 2x1 en Llaves Francesas", "📲 Mercado Pago 15% de Descuento en herramientas manuales"],
+    3: ["🪚 Miércoles: 25% OFF en Sierras", "🏦 Santander Río 10% sin interés en combos de ferretería"],
+    4: ["⚙️ Jueves: Taladros eléctricos al 30% efectivo", "💳 Tarjetas Visa 15% descuento sin interés en accesorios"],
+    5: ["🪛 Viernes: Juegos de destornilladores 2x1", "🧰 20% OFF en cajas de herramientas promo exclusiva"],
+    6: ["⛓️ Sábado: Cadenas y candados 10% en efectivo", "🔦 Linternas con débito Visa 5% sin recargo"]
+    // Domingo sin ofertas
+  };
+
+  // Obtener el día actual
+  const diaHoy = new Date().getDay();
+
+  //  Llenar el MODAL
+  if (listaOfertas) {
+    if (ofertasPorDia[diaHoy]) {
+      ofertasPorDia[diaHoy].forEach(oferta => {
+        const li = document.createElement("li");
+        li.textContent = oferta;
+        listaOfertas.appendChild(li);
+      });
+    } else {
+      const li = document.createElement("li");
+      li.textContent = "No tenemos ofertas especiales para hoy, vuelva mañana. Lo esperamos😊";
+      listaOfertas.appendChild(li);
+      btnConsultaWp.classList.add("hidden");
+    }
+
+    // Mostrar modal automáticamente
+    modal.classList.remove("hidden");
+  }
+
+  // Llenar la SECCIÓN DE OFERTAS
+  if (contenedor && titulo) {
+    contenedor.innerHTML = "";
+
+    if (ofertasPorDia[diaHoy]) {
+      const diasSemana = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+      titulo.textContent = `Ofertas del ${diasSemana[diaHoy]}`;
+
+      ofertasPorDia[diaHoy].forEach((oferta) => {
+        const card = document.createElement("div");
+        card.className = "relative bg-cover rounded-xl shadow-lg p-6 text-center text-white";
+
+        // Overlay negro
+        const overlay = document.createElement("div");
+        overlay.className = "absolute inset-0 bg-green-50 rounded-xl my-1";
+        card.appendChild(overlay);
+
+        // Texto oferta
+        const content = document.createElement("div");
+        content.className = "relative z-10 text-black";
+        const p = document.createElement("p");
+        p.textContent = oferta;
+        content.appendChild(p);
+
+        card.appendChild(content);
+        contenedor.appendChild(card);
+      });
+    } else {
+      titulo.textContent = "No tenemos ofertas especiales para hoy";
+      const msg = document.createElement("p");
+      msg.className = "text-center text-gray-600 col-span-3";
+      msg.textContent = "Vuelve mañana para ver nuestras promociones 😊";
+      contenedor.appendChild(msg);
+    }
+  }
+
+};
